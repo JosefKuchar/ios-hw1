@@ -1,0 +1,85 @@
+#!/bin/sh
+
+POSIXLY_CORRECT=yes
+
+print_help() {
+  echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
+}
+
+is_valid_date() {
+  if [ "$(date -d "$1" +%Y-%m-%d 2> /dev/null)" = "$1" ]; then
+    return 0
+  else
+    echo -n "Invalid date: "
+    return 1
+  fi
+}
+
+is_valid_age() {
+  if [ "$1" -ge 0 2> /dev/null ]; then
+    return 0
+  else
+    echo -n "Invalid age: "
+    return 1
+  fi
+}
+
+
+# Parse arguments
+while getopts ":ha:b:g:s" opt; do
+  case ${opt} in
+    h ) # process option h
+      print_help
+      exit
+      ;;
+    a )
+      ;;
+    b )
+      ;;
+    g )
+      ;;
+    s )
+      ;;
+    : )
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+    \? )
+      echo "Invalid option: -$OPTARG" 1>&2
+      print_help
+      exit 1
+      ;;
+  esac
+done
+
+shift $((OPTIND -1))
+
+case $1 in
+  infected )
+    ;;
+  merge )
+    ;;
+  gender )
+    ;;
+  age )
+    ;;
+  daily )
+    ;;
+  monthly )
+    ;;
+  yearly )
+    ;;
+  countries )
+    ;;
+  districts )
+    ;;
+  regions )
+    ;;
+esac
+
+
+
+echo $(is_valid_date 2020-02-28)
+is_valid_age -110
+
+echo "Test"

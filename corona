@@ -3,83 +3,172 @@
 POSIXLY_CORRECT=yes
 
 print_help() {
-  echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
+    echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
 }
 
 is_valid_date() {
-  if [ "$(date -d "$1" +%Y-%m-%d 2> /dev/null)" = "$1" ]; then
-    return 0
-  else
-    echo -n "Invalid date: "
-    return 1
-  fi
+    if [ "$(date -d "$1" +%Y-%m-%d 2> /dev/null)" = "$1" ]; then
+        return 0
+    else
+        echo -n "Invalid date: "
+        return 1
+    fi
 }
 
 is_valid_age() {
-  if [ "$1" -ge 0 2> /dev/null ]; then
-    return 0
-  else
-    echo -n "Invalid age: "
-    return 1
-  fi
+    if [ "$1" -ge 0 2> /dev/null ]; then
+        return 0
+    else
+        echo -n "Invalid age: "
+        return 1
+    fi
 }
 
 
-# Parse arguments
+# CSV header
+header="id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
+
+# Default arg values
+gender=""
+date_from=""
+date_to=""
+
+# Parse FILTERS
 while getopts ":ha:b:g:s" opt; do
-  case ${opt} in
-    h ) # process option h
-      print_help
-      exit
-      ;;
-    a )
-      ;;
-    b )
-      ;;
-    g )
-      ;;
-    s )
-      ;;
-    : )
-      echo "Option -$OPTARG requires an argument." >&2
-      exit 1
-      ;;
-    \? )
-      echo "Invalid option: -$OPTARG" 1>&2
-      print_help
-      exit 1
-      ;;
-  esac
+    case ${opt} in
+        h ) # process option h
+            print_help
+            exit
+        ;;
+        a )
+            date_from=$OPTARG
+        ;;
+        b )
+            date_to=$OPTARG
+        ;;
+        g )
+            gender="$OPTARG"
+            # if [ gender != "M" -a gender != "Z" ]; then
+            #     # TODO better message
+            #     echo "Invalid gender"
+            #     exit 1
+            # fi
+        ;;
+        s )
+        ;;
+        : )
+            echo "Option -$OPTARG requires an argument." >&2
+            exit 1
+        ;;
+        \? )
+            echo "Invalid option: -$OPTARG" 1>&2
+            print_help
+            exit 1
+        ;;
+    esac
 done
 
 shift $((OPTIND -1))
 
+# Parse COMMAND
+parsed_command=true
 case $1 in
-  infected )
+    infected )
     ;;
-  merge )
+    merge )
     ;;
-  gender )
+    gender )
     ;;
-  age )
+    age )
     ;;
-  daily )
+    daily )
     ;;
-  monthly )
+    monthly )
     ;;
-  yearly )
+    yearly )
     ;;
-  countries )
+    countries )
     ;;
-  districts )
+    districts )
     ;;
-  regions )
+    regions )
+    ;;
+    *)
+        parsed_command=false
     ;;
 esac
 
+# Remove COMMAND from arguments if it was parsed
+if [ $parsed_command = true ]; then
+    shift
+fi
 
+buffer=""
+# If no log supplied then use stdin
+if [ $# -eq 0 ]; then
+    buffer="$(cat | sed 1d)"
+else
+    # Iterate over all files
+    for filename in "$@"
+    do
+        # Get file contents as a string
+        if [ "${filename##*.}" = "gz" ]; then
+            # Decompress, keep file, print to stdout
+            input=$(gzip -dkc "$filename")
+        elif [ "${filename##*.}" = "bz2" ]
+        then
+            # Decompress, keep file, print to stdout
+            input=$(bzip2 -dkc "$filename")
+        else
+            input=$(cat "$filename")
+        fi
+        
+        # Remove header
+        input="$(echo "$input" | sed 1d)"
+        
+        # Add to buffer
+        buffer="$buffer$input"
+    done
+fi
 
-echo $(is_valid_date 2020-02-28)
-is_valid_age -110
+# Print header
+echo "$header"
 
-echo "Test"
+# Apply filters
+buffer=$(echo "$buffer" | awk \
+    -F "," \
+    -v g="$gender" \
+    -v a="$date_from" \
+    -v b="$date_to" \
+    '{
+    if ((g == "" || $4 == g) && (a == "" || a <= $2) && (b == "" || b >= $2)) {
+        if (!match($3, /^[0-9]*$/)) printf "Invalid age: "
+        # if (system()) printf "Invalid date"
+        print
+    }
+}')
+
+# Count number of lines
+echo "$buffer" | wc -l
+
+echo "$buffer" | awk -F "," '
+    {
+        if ($4 == "M") mCount++
+        else if ($4 == "Z") zCount++
+        else noneCount++
+    }
+
+    END {
+        print "M: " mCount
+        print "Z: " zCount
+        if (noneCount != 0) print "None: " noneCount
+    }
+'
+
+# Decompress, keep file, print to stdout
+#
+
+# Decompress, keep file, print to stdout
+# gzip -dkc data/osoby-short.csv.gz
+
+exit 0

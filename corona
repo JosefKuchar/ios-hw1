@@ -55,7 +55,6 @@ agregate_gender() {
             else if ($4 == "Z") zCount++
             else noneCount++
         }
-
         END {
             print "M: " mCount
             print "Z: " zCount
@@ -257,31 +256,33 @@ else
     done
 fi
 
+# Get rows with errors
+errors=$(echo "$buffer" | awk -F "," \
+    '{
+        date = $2; gsub("-", " ", date)
+        if (!match($3, /^[0-9]*$/)) { print "Invalid age: " $0 }
+        if (strftime("%Y-%m-%d", mktime(date " 00 00 00")) != $2) { print "Invalid date: " $0 }
+    }'
+)
+
 # Apply filters
 buffer=$(echo "$buffer" | awk \
     -F "," \
     -v g="$gender" \
     -v a="$date_from" \
     -v b="$date_to" \
-    '{
-        if ((g == "" || $4 == g) && (a == "" || a <= $2) && (b == "" || b >= $2)) {
-            print
-        }
-    }'
-)
-
-# Get rows with errors
-errors=$(echo "$buffer" | awk -F "," \
-    '{
-        if (!match($3, /^[0-9]*$/)) { print "Invalid age: " $0 }
-    }'
+    '(g == "" || $4 == g) && (a == "" || a <= $2) && (b == "" || b >= $2)'
 )
 
 # Get rows without errors
 filtered=$(echo "$buffer" | awk -F "," \
-    'match($3, /^[0-9]*$/)'
+    '{
+        date = $2; gsub("-", " ", date)
+        if (match($3, /^[0-9]*$/) && (strftime("%Y-%m-%d", mktime(date " 00 00 00")) == $2)) { print }
+    }'
 )
 
+# Process COMMAND
 case "$command" in
     merge )
         # Print header
@@ -296,7 +297,7 @@ case "$command" in
         echo "$filtered" | wc -l
     ;;
     countries )
-        without_cz=$(echo "$filtered" | awk -F "," '$8 != "CZ"')
+        without_cz=$(echo "$filtered" | awk -F "," '$8 != "CZ" && $8 != ""')
         agregated=$(agregate_area "$without_cz" 8)
         print_agregated "$agregated" 100 "$histogram" "$histogram_width"
     ;;
@@ -330,6 +331,7 @@ case "$command" in
     ;;
 esac
 
+# Print errors
 if [ "$errors" != "" ]; then
     echo "$errors"
 fi

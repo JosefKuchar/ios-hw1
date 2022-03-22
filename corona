@@ -13,7 +13,7 @@ check_date() {
     if [ "$(date -d "$1" +%Y-%m-%d 2> /dev/null)" = "$1" ]; then
         return 0
     else
-        echo "Supplied date is invalid!"
+        echo "Supplied date is invalid!" 1>&2
         exit 1
     fi
 }
@@ -21,7 +21,7 @@ check_date() {
 # $1 Gender to be checked
 check_gender() {
     if [ "$1" != "M" -a "$1" != "Z" ]; then
-        echo "Supplied gender is invalid. M,Z are valid options."
+        echo "Supplied gender is invalid. M,Z are valid options." 1>&2
         exit 1
     fi
 }
@@ -132,8 +132,9 @@ print_agregated() {
         if [ "$4" = "" ]; then
             echo "$1" | awk -F ": " -v w="$2" '
                 {
-                    printf $1 ": "
+                    printf $1 ":"
                     for (i = 0; i < int($2/w); i++) {
+                        if (i == 0) printf " "
                         printf "#"
                     }
                     print ""
@@ -206,7 +207,7 @@ while getopts ":ha:b:g:d:r:s" opt; do
             fi
         ;;
         : ) # Handle unsuplied arguments to required options
-            echo "Option -$OPTARG requires an argument." >&2
+            echo "Option -$OPTARG requires an argument." 1>&2
             exit 1
         ;;
         \? ) # Handle invalid arguments
@@ -221,7 +222,10 @@ done
 shift $((OPTIND -1))
 
 # Check COMMAND
-if echo "infected merge gender age daily monthly yearly countries districts regions" | grep -w -q $1; then
+if [ -z "$1" ]; then
+    command="merge"
+elif echo "infected merge gender age daily monthly yearly countries districts regions" | grep -w -q $1
+then
     command="$1"
     shift
 else
@@ -231,7 +235,7 @@ fi
 buffer=""
 # If no log supplied then use stdin
 if [ $# -eq 0 ]; then
-    buffer="$(cat | sed 1d | tr -d ' ' | grep '\S')"
+    buffer="$(cat | sed 1d)"
 else
     # Iterate over all files
     for filename in "$@"
@@ -249,12 +253,14 @@ else
         fi
         
         # Remove header
-        input="$(echo "$input" | sed 1d | tr -d ' ' | grep '\S')"
+        input="$(echo "$input" | sed 1d)"
         
         # Add to buffer
-        buffer="$buffer$input"
+        buffer="$buffer\n$input"
     done
 fi
+
+buffer="$(echo "$buffer" | tr -d '\r' | tr -d ' ' | grep '\S')"
 
 # Get rows with errors
 errors=$(echo "$buffer" | awk -F "," \
@@ -288,12 +294,14 @@ case "$command" in
         # Print header
         echo "$header"
         # Print data
-        # TODO check if uniq is needed
         # We don't check errors here
-        echo "$buffer" | uniq
+        if [ "$buffer" != "" ]; then
+            echo "$buffer"
+        fi
         exit
     ;;
     infected )
+        echo "$filtered" > test.txt
         echo "$filtered" | wc -l
     ;;
     countries )
@@ -333,5 +341,5 @@ esac
 
 # Print errors
 if [ "$errors" != "" ]; then
-    echo "$errors"
+    echo "$errors" 1>&2
 fi

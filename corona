@@ -263,13 +263,15 @@ fi
 buffer="$(echo "$buffer" | tr -d '\r' | tr -d ' ' | grep '\S')"
 
 # Get rows with errors
-errors=$(echo "$buffer" | awk -F "," \
-    '{
+if [ "$command" != "merge" ]; then
+    errors=$(echo "$buffer" | awk -F "," \
+        '{
         date = $2; gsub("-", " ", date)
         if (!match($3, /^[0-9]*$/)) { print "Invalid age: " $0 }
         if (strftime("%Y-%m-%d", mktime(date " 00 00 00")) != $2) { print "Invalid date: " $0 }
-    }'
-)
+        }'
+    )
+fi
 
 # Apply filters
 buffer=$(echo "$buffer" | awk \
@@ -280,13 +282,15 @@ buffer=$(echo "$buffer" | awk \
     '(g == "" || $4 == g) && (a == "" || a <= $2) && (b == "" || b >= $2)'
 )
 
-# Get rows without errors
-filtered=$(echo "$buffer" | awk -F "," \
-    '{
+if [ "$command" != "merge" ]; then
+    # Get rows without errors
+    filtered=$(echo "$buffer" | awk -F "," \
+        '{
         date = $2; gsub("-", " ", date)
         if (match($3, /^[0-9]*$/) && (strftime("%Y-%m-%d", mktime(date " 00 00 00")) == $2)) { print }
-    }'
-)
+        }'
+    )
+fi
 
 # Process COMMAND
 case "$command" in

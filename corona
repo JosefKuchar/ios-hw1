@@ -6,7 +6,35 @@ POSIXLY_CORRECT=yes
 # VUT FIT 2022
 
 print_help() {
-    echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
+    echo "Použití: ./corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
+    echo "COMMAND"
+    echo "  infected - spočítá počet nakažených"
+    echo "  merge - sloučí několik souborů se záznamy do jednoho,"
+    echo "          zachovávající původní pořadí"
+    echo "  gender - vypíše počet nakažených pro jednotlivá pohlaví"
+    echo "  age - vypíše statistiku počtu nakažených osob dle věku"
+    echo "  daily - vypíše statistiku nakažených osob pro jednotlivé dny"
+    echo "  monthly - vypíše statistiku nakažených osob pro jednotlivé měsíce"
+    echo "  yearly - vypíše statistiku nakažených osob pro jednotlivé roky"
+    echo "  countries - vypíše statistiku nakažených osob pro"
+    echo "              jednotlivé země nákazy (bez ČR, tj. kódu CZ)"
+    echo "  districts - vypíše statistiku nakažených"
+    echo "              osob pro jednotlivé okresy"
+    echo "  regions - vypíše statistiku nakažených osob pro jednotlivé kraje"
+    echo ""
+    echo "FILTERS"
+    echo "  -h - vypíše tuto nápovědu"
+    echo "  -a DATETIME - after: jsou uvažovány pouze záznamy PO tomto datu"
+    echo "                (včetně tohoto data). DATETIME je formátu YYYY-MM-DD"
+    echo "  -b DATETIME - before: jsou uvažovány pouze záznamy PŘED tímto datem"
+    echo "                (včetně tohoto data). DATETIME je formátu YYYY-MM-DD"
+    echo "  -g GENDER - jsou uvažovány pouze záznamy nakažených osob daného"
+    echo "              pohlaví. GENDER může být M (muži) nebo Z (ženy)"
+    echo "  -s [WIDTH] u příkazů gender, age, daily, monthly, yearly,"
+    echo "             countries, districts a regions vypisuje data ne číselně,"
+    echo "             ale graficky v podobě histogramů. Nepovinný parametr"
+    echo "             WIDTH nastavuje šířku histogramů, tedy délku nejdelšího"
+    echo "             řádku, na WIDTH"
 }
 
 # $1 Date to be checked
@@ -210,7 +238,6 @@ while getopts ":ha:b:g:d:r:s" opt; do
         ;;
         \? ) # Handle invalid arguments
             echo "Invalid option: -$OPTARG" 1>&2
-            print_help
             exit 1
         ;;
     esac

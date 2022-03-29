@@ -3,6 +3,7 @@ POSIXLY_CORRECT=yes
 
 # Josef Kuchar - xkucha28
 # https://josefkuchar.com
+# VUT FIT 2022
 
 print_help() {
     echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
@@ -66,38 +67,35 @@ agregate_gender() {
 # $1 Input
 agregate_age() {
     echo "$1" | awk -F "," '
-        BEGIN {
-            for (i = 1; i <= 12; i++) age[i] = 0
-        }
         {
-            if ($3 == "") age[13]++
-            else if ($3 <= 5) age[1]++
-            else if ($3 >= 6 && $3 <= 15) age[2]++
-            else if ($3 >= 16 && $3 <= 25) age[3]++
-            else if ($3 >= 26 && $3 <= 35) age[4]++
-            else if ($3 >= 36 && $3 <= 45) age[5]++
-            else if ($3 >= 46 && $3 <= 55) age[6]++
-            else if ($3 >= 56 && $3 <= 65) age[7]++
-            else if ($3 >= 66 && $3 <= 75) age[8]++
-            else if ($3 >= 76 && $3 <= 85) age[9]++
-            else if ($3 >= 86 && $3 <= 95) age[10]++
-            else if ($3 >= 96 && $3 <= 105) age[11]++
-            else age[12]++
+            if ($3 == "") none++
+            else if ($3 >= 0 && $3 <= 5) age1++
+            else if ($3 >= 6 && $3 <= 15) age2++
+            else if ($3 >= 16 && $3 <= 25) age3++
+            else if ($3 >= 26 && $3 <= 35) age4++
+            else if ($3 >= 36 && $3 <= 45) age5++
+            else if ($3 >= 46 && $3 <= 55) age6++
+            else if ($3 >= 56 && $3 <= 65) age7++
+            else if ($3 >= 66 && $3 <= 75) age8++
+            else if ($3 >= 76 && $3 <= 85) age9++
+            else if ($3 >= 86 && $3 <= 95) age10++
+            else if ($3 >= 96 && $3 <= 105) age11++
+            else if ($3 >= 106) age12++
         }
         END {
-            print "0-5   : " age[1]
-            print "6-15  : " age[2]
-            print "16-25 : " age[3]
-            print "26-35 : " age[4]
-            print "36-45 : " age[5]
-            print "46-55 : " age[6]
-            print "56-65 : " age[7]
-            print "66-75 : " age[8]
-            print "76-85 : " age[9]
-            print "86-95 : " age[10]
-            print "96-105: " age[11]
-            print ">105  : " age[12]
-            if (age[13]) print "None  : " age[13]
+            print "0-5   : " age1
+            print "6-15  : " age2
+            print "16-25 : " age3
+            print "26-35 : " age4
+            print "36-45 : " age5
+            print "46-55 : " age6
+            print "56-65 : " age7
+            print "66-75 : " age8
+            print "76-85 : " age9
+            print "86-95 : " age10
+            print "96-105: " age11
+            print ">105  : " age12
+            if (none) print "None  : " none
         }
     '
 }
@@ -240,6 +238,12 @@ else
     # Iterate over all files
     for filename in "$@"
     do
+        # Check if file exists
+        if ! test -f "$filename"; then
+            echo "File not found: $filename" 1>&2
+            exit 1
+        fi
+        
         # Get file contents as a string
         if [ "${filename##*.}" = "gz" ]; then
             # Decompress, keep file, print to stdout
@@ -263,12 +267,13 @@ fi
 buffer="$(echo "$buffer" | tr -d '\r' | tr -d ' ' | grep '\S')"
 
 # Get rows with errors
+# Don't have to check in marge command according to forum answer
 if [ "$command" != "merge" ]; then
     errors=$(echo "$buffer" | awk -F "," \
         '{
-        date = $2; gsub("-", " ", date)
-        if (!match($3, /^[0-9]*$/)) { print "Invalid age: " $0 }
-        if (strftime("%Y-%m-%d", mktime(date " 00 00 00")) != $2) { print "Invalid date: " $0 }
+            date = $2; gsub("-", " ", date)
+            if (!match($3, /^[0-9]*$/)) { print "Invalid age: " $0 }
+            if (strftime("%Y-%m-%d", mktime(date " 00 00 00")) != $2) { print "Invalid date: " $0 }
         }'
     )
 fi
@@ -282,6 +287,7 @@ buffer=$(echo "$buffer" | awk \
     '(g == "" || $4 == g) && (a == "" || a <= $2) && (b == "" || b >= $2)'
 )
 
+# Don't have to check in marge command according to forum answer
 if [ "$command" != "merge" ]; then
     # Get rows without errors
     filtered=$(echo "$buffer" | awk -F "," \

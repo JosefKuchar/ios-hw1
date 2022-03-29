@@ -311,7 +311,6 @@ case "$command" in
         exit
     ;;
     infected )
-        echo "$filtered" > test.txt
         echo "$filtered" | wc -l
     ;;
     countries )

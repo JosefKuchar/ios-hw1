@@ -1,7 +1,7 @@
 #!/bin/sh
 
 export POSIXLY_CORRECT=yes
-export LC_NUMERIC=en_US.UTF-8
+export LC_ALL=C
 
 # Josef Kuchar - xkucha28
 # https://josefkuchar.com
@@ -275,7 +275,7 @@ else
             echo "File not found: $filename" 1>&2
             exit 1
         fi
-        
+
         # Get file contents as a string
         if [ "${filename##*.}" = "gz" ]; then
             # Decompress, keep file, print to stdout
@@ -287,10 +287,10 @@ else
         else
             input=$(cat "$filename")
         fi
-        
+
         # Remove header
         input="$(echo "$input" | sed 1d)"
-        
+
         # Add to buffer
         buffer="$buffer\n$input"
     done
